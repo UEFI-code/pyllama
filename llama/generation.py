@@ -9,10 +9,10 @@ from llama.tokenizer import Tokenizer
 
 
 class LLaMA:
-    def __init__(self, model, tokenizer: Tokenizer):
+    def __init__(self, model, tokenizer: Tokenizer, useGPU = True):
         self.model = model
         self.tokenizer = tokenizer
-        
+        self.useGPU = useGPU
     def _should_stop(self, tokens, prompt_tokens, stop_ids, stop_words):
         """credits go to: https://github.com/galatolofederico/vanilla-llama"""
         if stop_ids is not None:
@@ -63,7 +63,10 @@ class LLaMA:
 
         total_len = min(params.max_seq_len, max_gen_len + max_prompt_size)
 
-        tokens = torch.full((bsz, total_len), self.tokenizer.pad_id).cuda().long()
+        tokens = torch.full((bsz, total_len), self.tokenizer.pad_id).long()
+        if self.useGPU:
+            tokens = tokens.cuda()
+
         for k, t in enumerate(prompt_tokens):
             tokens[k, : len(t)] = torch.tensor(t).long()
         input_text_mask = tokens != self.tokenizer.pad_id
