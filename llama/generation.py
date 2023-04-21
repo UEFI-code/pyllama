@@ -72,7 +72,7 @@ class LLaMA:
         input_text_mask = tokens != self.tokenizer.pad_id
         start_pos = min_prompt_size
         #prev_pos = 0
-        for cur_pos in range(start_pos, total_len):
+        for cur_pos in range(start_pos, start_pos + 64):
             i = tokens[:, :cur_pos]
             print('input: ', i)
             logits = self.model(i)
@@ -89,6 +89,7 @@ class LLaMA:
             )
             tokens[:, cur_pos] = next_token
             #prev_pos = cur_pos
+            #print(self.tokenizer.decode(tokens[0].tolist()))
             
             if self._should_stop(tokens, prompt_tokens, stop_ids, stop_words):
                 break
