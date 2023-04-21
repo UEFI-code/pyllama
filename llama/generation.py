@@ -71,10 +71,12 @@ class LLaMA:
             tokens[k, : len(t)] = torch.tensor(t).long()
         input_text_mask = tokens != self.tokenizer.pad_id
         start_pos = min_prompt_size
-        prev_pos = 0
+        #prev_pos = 0
         for cur_pos in range(start_pos, total_len):
-            i = tokens[:, prev_pos:cur_pos]
-            logits = self.model(i, prev_pos)
+            i = tokens[:, :cur_pos]
+            print('input: ', i)
+            logits = self.model(i)
+            print('Result: ', logits)
             if temperature > 0:
                 probs = torch.softmax(logits / temperature, dim=-1)
                 next_token = sample_top_p(probs, top_p)
@@ -86,7 +88,7 @@ class LLaMA:
                 input_text_mask[:, cur_pos], tokens[:, cur_pos], next_token
             )
             tokens[:, cur_pos] = next_token
-            prev_pos = cur_pos
+            #prev_pos = cur_pos
             
             if self._should_stop(tokens, prompt_tokens, stop_ids, stop_words):
                 break

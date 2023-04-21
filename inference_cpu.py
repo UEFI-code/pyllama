@@ -69,9 +69,9 @@ def get_args():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ckpt_dir", type=str, default="/llama_data/7B")
+    parser.add_argument("--ckpt_dir", type=str, default="llama/pyllama_data/7B")
     parser.add_argument(
-        "--tokenizer_path", type=str, default="/llama_data/tokenizer.model"
+        "--tokenizer_path", type=str, default="llama/pyllama_data/tokenizer.model"
     )
     return parser.parse_args()
 

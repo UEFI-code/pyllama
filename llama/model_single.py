@@ -103,7 +103,7 @@ class Attention(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        start_pos: int,
+        #start_pos: int,
         freqs_cis: torch.Tensor,
         mask: Optional[torch.Tensor],
     ):
@@ -116,14 +116,17 @@ class Attention(nn.Module):
 
         xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
-        self.cache_k = self.cache_k.to(xq)
-        self.cache_v = self.cache_v.to(xq)
+        # self.cache_k = self.cache_k.to(xq)
+        # self.cache_v = self.cache_v.to(xq)
 
-        self.cache_k[:bsz, start_pos : start_pos + seqlen] = xk
-        self.cache_v[:bsz, start_pos : start_pos + seqlen] = xv
+        # self.cache_k[:bsz, start_pos : start_pos + seqlen] = xk
+        # self.cache_v[:bsz, start_pos : start_pos + seqlen] = xv
 
-        keys = self.cache_k[:bsz, : start_pos + seqlen]
-        values = self.cache_v[:bsz, : start_pos + seqlen]
+        # keys = self.cache_k[:bsz, : start_pos + seqlen]
+        # values = self.cache_v[:bsz, : start_pos + seqlen]
+
+        keys = xk
+        values = xv
 
         xq = xq.transpose(1, 2)
         keys = keys.transpose(1, 2)
@@ -174,12 +177,12 @@ class TransformerBlock(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        start_pos: int,
+        #start_pos: int,
         freqs_cis: torch.Tensor,
         mask: Optional[torch.Tensor],
     ):
         h = x + self.attention.forward(
-            self.attention_norm(x), start_pos, freqs_cis, mask
+            self.attention_norm(x), freqs_cis, mask
         )
         out = h + self.feed_forward.forward(self.ffn_norm(h))
         return out
@@ -206,21 +209,21 @@ class Transformer(nn.Module):
         )
 
     @torch.inference_mode()
-    def forward(self, tokens: torch.Tensor, start_pos: int):
+    def forward(self, tokens: torch.Tensor):
         _bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
         self.freqs_cis = self.freqs_cis.to(h.device)
-        freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen]
+        freqs_cis = self.freqs_cis[ :seqlen]
 
         mask = None
         if seqlen > 1:
             mask = torch.full(
                 (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
             )
-            mask = torch.triu(mask, diagonal=start_pos + 1).type_as(h)
+            mask = torch.triu(mask, diagonal= 1).type_as(h)
 
         for layer in self.layers:
-            h = layer(h, start_pos, freqs_cis, mask)
+            h = layer(h, freqs_cis, mask)
         h = self.norm(h)
         output = self.output(h[:, -1, :])  # only compute last logits
         return output.float()
