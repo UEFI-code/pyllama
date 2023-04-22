@@ -38,3 +38,18 @@ theModel = load()
 if not os.path.exists("theHack"):
     os.mkdir("theHack")
 os.chdir("theHack")
+
+torch.save(theModel.tok_embeddings, "theTokEmbeddingLayer.pth")
+print("Saved theTokEmbeddingLayer.pth")
+
+for i in theModel.layers:
+    torch.save(i, f"theTransformerLayer{i.layer_id}.pth")
+    print(f"Saved theTransformerLayer{i.layer_id}.pth")
+
+torch.save(theModel.norm, "theNormLayer.pth")
+print("Saved theNorm.pth")
+
+torch.save(theModel.output, "theOutputLayer.pth")
+print("Saved theOutput.pth")
+
+

@@ -42,12 +42,12 @@ def precompute_freqs_cis(dim: int, end: int, theta: float = 10000.0):
     return freqs_cis
 
 
-def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
-    ndim = x.ndim
-    assert 0 <= 1 < ndim
-    assert freqs_cis.shape == (x.shape[1], x.shape[-1])
-    shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
-    return freqs_cis.view(*shape)
+# def reshape_for_broadcast(freqs_cis: torch.Tensor, x: torch.Tensor):
+#     ndim = x.ndim
+#     assert 0 <= 1 < ndim
+#     assert freqs_cis.shape == (x.shape[1], x.shape[-1])
+#     shape = [d if i == 1 or i == ndim - 1 else 1 for i, d in enumerate(x.shape)]
+#     return freqs_cis.view(*shape)
 
 
 def apply_rotary_emb(
@@ -57,7 +57,10 @@ def apply_rotary_emb(
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
-    freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
+    #freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
+    freqs_cis = freqs_cis.view(1, freqs_cis.shape[0], 1, freqs_cis.shape[1])
+    #print('xq_ ', xq_.shape)
+    #print('freqs_cis_ ', freqs_cis.shape)
     xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
     xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
     return xq_out.type_as(xq), xk_out.type_as(xk)
@@ -108,13 +111,20 @@ class Attention(nn.Module):
         mask: Optional[torch.Tensor],
     ):
         bsz, seqlen, _ = x.shape
-        xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
 
-        xq = xq.view(bsz, seqlen, self.n_local_heads, self.head_dim)
-        xk = xk.view(bsz, seqlen, self.n_local_heads, self.head_dim)
-        xv = xv.view(bsz, seqlen, self.n_local_heads, self.head_dim)
+        # Found out the last word
 
-        xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
+        last_word = x[:, -1:, :]
+
+        xq, xk, xv = self.wq(last_word), self.wk(last_word), self.wv(last_word)
+
+        xq = xq.view(bsz, 1, self.n_local_heads, self.head_dim)
+        xk = xk.view(bsz, 1, self.n_local_heads, self.head_dim)
+        xv = xv.view(bsz, 1, self.n_local_heads, self.head_dim)
+
+        print('xq ', xq.shape)
+
+        xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis[-1:, :])
 
         # self.cache_k = self.cache_k.to(xq)
         # self.cache_v = self.cache_v.to(xq)
@@ -125,8 +135,10 @@ class Attention(nn.Module):
         # keys = self.cache_k[:bsz, : start_pos + seqlen]
         # values = self.cache_v[:bsz, : start_pos + seqlen]
 
-        keys = xk
-        values = xv
+        keys = self.wk(x).view(bsz, seqlen, self.n_local_heads, self.head_dim)
+        values = self.wv(x).view(bsz, seqlen, self.n_local_heads, self.head_dim)
+
+        print('keys ', keys.shape)
 
         xq = xq.transpose(1, 2)
         keys = keys.transpose(1, 2)
@@ -207,23 +219,23 @@ class Transformer(nn.Module):
         self.freqs_cis = precompute_freqs_cis(
             self.params.dim // self.params.n_heads, self.params.max_seq_len * 2
         )
-
     @torch.inference_mode()
     def forward(self, tokens: torch.Tensor):
-        _bsz, seqlen = tokens.shape
+        #_bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
         self.freqs_cis = self.freqs_cis.to(h.device)
-        freqs_cis = self.freqs_cis[ :seqlen]
-
+        #freqs_cis = self.freqs_cis[ :seqlen]
+        print('freqs_cis ', self.freqs_cis)
         mask = None
-        if seqlen > 1:
-            mask = torch.full(
-                (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
-            )
-            mask = torch.triu(mask, diagonal= 1).type_as(h)
+        # if seqlen > 1:
+        #     mask = torch.full(
+        #         (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
+        #     )
+        #     mask = torch.triu(mask, diagonal= 1).type_as(h)
+        #     print('mask ', mask.shape)
 
         for layer in self.layers:
-            h = layer(h, freqs_cis, mask)
+            h = layer(h, self.freqs_cis, mask)
         h = self.norm(h)
         output = self.output(h[:, -1, :])  # only compute last logits
         return output.float()
