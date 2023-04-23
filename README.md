@@ -1,19 +1,13 @@
-# 🦙 LLaMA - Run LLM in A Single 4GB GPU and 64GB CPU
+# 🦙 LLaMA_Hack - The Research of Shrinking the LLM to A Single 4GB GPU and 64GB CPU
 
 
-> 📢 `pyllama` is a hacked version of `LLaMA` based on original Facebook's implementation but more convenient to run in a Single consumer grade GPU.
+> 📢 `pyllama_Hack` is a hacked version `pyllama`, and `pyllama` is a hacked version of `LLaMA` based on original Facebook's implementation but more convenient to run in a Single consumer grade GPU.
 
 > The Hugging Face's LLaMA implementation is available at `pyllama.hf`.
 
 ## 📥 Installation
 
-In a conda env with pytorch / cuda available, run:
-```
-pip install pyllama -U
-```
-
-> 🐏 If you have installed llama library from other sources, please uninstall the previous llama library and use `pip install pyllama -U` to install the latest version.
-
+Clone this repo, run ```python setup.py install```
 
 ## 📦 Download Model Files
 

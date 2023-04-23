@@ -32,12 +32,12 @@ class myBadTransfomer(nn.Module):
         super().__init__()
         self.li1 = nn.Linear(4096, 4096, bias=False)
         self.attn = nn.Linear(4096, 4096, bias=False)
-        self.li2 = nn.Linear(128, 128, bias=False)
+        #self.li2 = nn.Linear(128, 128, bias=False)
         self.li3 = nn.Linear(4096, 4096, bias=False)
 
         self.relu = nn.ReLU()
 
-    def forward(self, x, freq):
+    def forward(self, x):
         attn = self.attn(x)
         x = self.li1(x)
         x = attn * x
@@ -52,11 +52,13 @@ class myBadTransfomer(nn.Module):
 
 def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
     print('hackTheTransformer id ', id)
-    TransID  = id * 2
-    theTransformerA = torch.load('theTransformerLayer%d.pth' % TransID, map_location=device)
-    theTransformerB = torch.load('theTransformerLayer%d.pth' % (TransID + 1), map_location=device)
+    # TransID  = id * 2
+    # theTransformerA = torch.load('theTransformerLayer%d.pth' % TransID, map_location=device)
+    # theTransformerB = torch.load('theTransformerLayer%d.pth' % (TransID + 1), map_location=device)
     # theTransformerC = torch.load('theTransformerLayer%d.pth' % (TransID + 2), map_location=device)
     # theTransformerD = torch.load('theTransformerLayer%d.pth' % (TransID + 3), map_location=device)
+
+    theTransformer = torch.load('theTransformerLayer%d.pth' % id, map_location=device)
 
     theBadTransformer = myBadTransfomer().to(device)
     myFreqs = freqs_cis.clone().to(device)
@@ -67,12 +69,14 @@ def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
     myLoss = torch.nn.L1Loss()
     for _ in range(epochs):
         dummyInput = torch.rand(1, 128, 4096, device=device)
-        respondFromTheTransformer = theTransformerA(dummyInput, myFreqs, myMask)
-        respondFromTheTransformer = theTransformerB(respondFromTheTransformer, myFreqs, myMask)
+        # respondFromTheTransformer = theTransformerA(dummyInput, myFreqs, myMask)
+        # respondFromTheTransformer = theTransformerB(respondFromTheTransformer, myFreqs, myMask)
         # respondFromTheTransformer = theTransformerC(respondFromTheTransformer, myFreqs, myMask)
         # respondFromTheTransformer = theTransformerD(respondFromTheTransformer, myFreqs, myMask)
-        
-        respondFromTheBadTransformer = theBadTransformer(dummyInput, myFreqs)
+
+        respondFromTheTransformer = theTransformer(dummyInput, myFreqs, myMask)
+
+        respondFromTheBadTransformer = theBadTransformer(dummyInput)
         loss = myLoss(respondFromTheTransformer, respondFromTheBadTransformer)
         myOptimizer.zero_grad()
         loss.backward()
@@ -96,6 +100,22 @@ for i in threadlist:
 
 threadlist = []
 for i in range(8, 16):
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+for i in threadlist:
+    i.start()
+for i in threadlist:
+    i.join()
+
+threadlist = []
+for i in range(16, 24):
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+for i in threadlist:
+    i.start()
+for i in threadlist:
+    i.join()
+
+threadlist = []
+for i in range(24, 32):
     threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
