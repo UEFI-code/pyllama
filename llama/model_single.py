@@ -59,8 +59,8 @@ def apply_rotary_emb(
     xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
     #freqs_cis = reshape_for_broadcast(freqs_cis, xq_)
     freqs_cis = freqs_cis.view(1, freqs_cis.shape[0], 1, freqs_cis.shape[1])
-    #print('xq_ ', xq_.shape)
-    #print('freqs_cis_ ', freqs_cis.shape)
+    print('xq_ ', xq_.shape)
+    print('freqs_cis_ ', freqs_cis.shape)
     xq_out = torch.view_as_real(xq_ * freqs_cis).flatten(3)
     xk_out = torch.view_as_real(xk_ * freqs_cis).flatten(3)
     return xq_out.type_as(xq), xk_out.type_as(xk)
@@ -114,17 +114,23 @@ class Attention(nn.Module):
 
         # Found out the last word
 
-        last_word = x[:, -1:, :]
+        #last_word = x[:, -1:, :]
 
-        xq, xk, xv = self.wq(last_word), self.wk(last_word), self.wv(last_word)
+        #xq, xk, xv = self.wq(last_word), self.wk(last_word), self.wv(last_word)
+        xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
 
-        xq = xq.view(bsz, 1, self.n_local_heads, self.head_dim)
-        xk = xk.view(bsz, 1, self.n_local_heads, self.head_dim)
-        xv = xv.view(bsz, 1, self.n_local_heads, self.head_dim)
+        #xq = xq.view(bsz, 1, self.n_local_heads, self.head_dim)
+        #xk = xk.view(bsz, 1, self.n_local_heads, self.head_dim)
+        #xv = xv.view(bsz, 1, self.n_local_heads, self.head_dim)
 
-        print('xq ', xq.shape)
+        xq = xq.view(bsz, seqlen, self.n_local_heads, self.head_dim)
+        xk = xk.view(bsz, seqlen, self.n_local_heads, self.head_dim)
+        xv = xv.view(bsz, seqlen, self.n_local_heads, self.head_dim)
 
-        xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis[-1:, :])
+        #print('xq ', xq.shape)
+
+        #xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis[-1:, :])
+        xq, xk = apply_rotary_emb(xq, xk, freqs_cis=freqs_cis)
 
         # self.cache_k = self.cache_k.to(xq)
         # self.cache_v = self.cache_v.to(xq)
@@ -135,10 +141,13 @@ class Attention(nn.Module):
         # keys = self.cache_k[:bsz, : start_pos + seqlen]
         # values = self.cache_v[:bsz, : start_pos + seqlen]
 
-        keys = self.wk(x).view(bsz, seqlen, self.n_local_heads, self.head_dim)
-        values = self.wv(x).view(bsz, seqlen, self.n_local_heads, self.head_dim)
+        #keys = self.wk(x).view(bsz, seqlen, self.n_local_heads, self.head_dim)
+        #values = self.wv(x).view(bsz, seqlen, self.n_local_heads, self.head_dim)
 
-        print('keys ', keys.shape)
+        #print('keys ', keys.shape)
+
+        keys = xk
+        values = xv
 
         xq = xq.transpose(1, 2)
         keys = keys.transpose(1, 2)
@@ -151,7 +160,6 @@ class Attention(nn.Module):
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
 
         return self.wo(output)
-
 
 class FeedForward(nn.Module):
     def __init__(
@@ -221,21 +229,21 @@ class Transformer(nn.Module):
         )
     @torch.inference_mode()
     def forward(self, tokens: torch.Tensor):
-        #_bsz, seqlen = tokens.shape
+        _bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
         self.freqs_cis = self.freqs_cis.to(h.device)
-        #freqs_cis = self.freqs_cis[ :seqlen]
-        print('freqs_cis ', self.freqs_cis)
+        freqs_cis = self.freqs_cis[ :seqlen]
+        print('freqs_cis ', freqs_cis)
         mask = None
-        # if seqlen > 1:
-        #     mask = torch.full(
-        #         (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
-        #     )
-        #     mask = torch.triu(mask, diagonal= 1).type_as(h)
-        #     print('mask ', mask.shape)
+        if seqlen > 1:
+            mask = torch.full(
+                (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
+            )
+            mask = torch.triu(mask, diagonal= 1).type_as(h)
+            print('mask ', mask.shape)
 
         for layer in self.layers:
-            h = layer(h, self.freqs_cis, mask)
+            h = layer(h, freqs_cis, mask)
         h = self.norm(h)
         output = self.output(h[:, -1, :])  # only compute last logits
         return output.float()
