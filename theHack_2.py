@@ -27,7 +27,7 @@ def precompute_mask(seqlen = 128, device = torch.device('cpu')):
 freqs_cis = precompute_freqs_cis()
 mask = precompute_mask()
 
-from BadTransformerLLM import myBadTransfomer
+from theHack.BadTransformerLLM import myBadTransfomer
 
 def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
     print('hackTheTransformer id ', id)
@@ -44,7 +44,7 @@ def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
     myMask = mask.clone().to(device)
     if not os.path.exists('BadTransformer'):
         os.mkdir('BadTransformer')
-    myOptimizer = torch.optim.Adam(theBadTransformer.parameters(), lr=0.0003)
+    myOptimizer = torch.optim.Adam(theBadTransformer.parameters(), lr=0.0001)
     myLoss = torch.nn.L1Loss()
     for _ in range(epochs):
         dummyInput = torch.rand(1, 128, 4096, device=device)
@@ -71,7 +71,7 @@ import threading
 
 threadlist = []
 for i in range(8):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % i)))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % i)))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -79,7 +79,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(8, 16):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -87,7 +87,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(16, 24):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -95,7 +95,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(24, 32):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
