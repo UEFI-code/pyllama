@@ -65,13 +65,43 @@ def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
     torch.save(theBadTransformer, 'BadTransformer/theBadTransformerLayer%d.pth' % id)
     print('HackTheTransformer %d done' % id)
 
+def hackMultiTransformer(num = 2, id = 0, epochs = 4096, device = 'cuda:0'):
+    print('hackMultiTransformer num %d id %d' % (num, id))
+    TransID  = id * num
+    Transformers = []
+    for i in range(num):
+        Transformers.append(torch.load('theTransformerLayer%d.pth' % (TransID + i), map_location=device))
+        print('Load theTransformerLayer%d.pth' % (TransID + i))
+    theBadTransformer = myBadTransfomer().to(device)
+    myFreqs = freqs_cis.clone().to(device)
+    myMask = mask.clone().to(device)
+    if not os.path.exists('BadTransformer'):
+        os.mkdir('BadTransformer')
+    myOptimizer = torch.optim.Adam(theBadTransformer.parameters(), lr=0.0001)
+    myLoss = torch.nn.L1Loss()
+    for _ in range(epochs):
+        dummyInput = torch.rand(1, 128, 4096, device=device)
+        respondFromTheTransformer = dummyInput
+        for i in Transformers:
+            respondFromTheTransformer = i(respondFromTheTransformer, myFreqs, myMask)
+        respondFromTheBadTransformer = theBadTransformer(dummyInput)
+        loss = myLoss(respondFromTheTransformer, respondFromTheBadTransformer)
+        myOptimizer.zero_grad()
+        loss.backward()
+        myOptimizer.step()
+        print('HackMultiTransformer %d loss %.6f' % (id, loss.item()))
+    torch.save(theBadTransformer, 'BadTransformer/theBadTransformerLayer%d.pth' % id)
+    print('HackMultiTransformer %d done' % id)
+
 #hackTheTransformer(0)
 #hackTheTransformer(1, 8192)
+#hackMultiTransformer(4, 0, 8192)
+
 import threading
 
 threadlist = []
 for i in range(8):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % i)))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % i)))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -79,7 +109,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(8, 16):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -87,7 +117,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(16, 24):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -95,7 +125,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(24, 32):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
