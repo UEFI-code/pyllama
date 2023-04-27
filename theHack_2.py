@@ -71,7 +71,7 @@ import threading
 
 threadlist = []
 for i in range(8):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % i)))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % i)))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -79,7 +79,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(8, 16):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -87,7 +87,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(16, 24):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
@@ -95,7 +95,7 @@ for i in threadlist:
 
 threadlist = []
 for i in range(24, 32):
-    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 32768, 'cuda:%d' % (i % 8))))
+    threadlist.append(threading.Thread(target=hackTheTransformer, args=(i, 8192, 'cuda:%d' % (i % 8))))
 for i in threadlist:
     i.start()
 for i in threadlist:
