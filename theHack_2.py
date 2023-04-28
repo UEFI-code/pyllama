@@ -27,18 +27,18 @@ def precompute_mask(seqlen = 128, device = torch.device('cpu')):
 freqs_cis = precompute_freqs_cis()
 mask = precompute_mask()
 
-from theHack.BadTransformerLLM import myBadTransfomer
+from theHack.BadTransformerLLM import myBadTransfomerBlock, myBadTransformerUnit
 
 def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
     print('hackTheTransformer id ', id)
     theTransformer = torch.load('theTransformerLayer%d.pth' % id, map_location=device)
     try:
-        theBadTransformer = torch.load('BadTransformer/theBadTransformerLayer%d.pth' % id, map_location=device)
-        print('Loaded BadTransformer/theBadTransformerLayer%d.pth' % id)
+        theBadTransformer = torch.load('BadTransformer/theBadTransformerBlock%d.pth' % id, map_location=device)
+        print('Loaded BadTransformer/theBadTransformerBlock%d.pth' % id)
     except Exception as e:
         print(e)
-        print('BadTransformer/theBadTransformerLayer%d.pth not found' % id)
-        theBadTransformer = myBadTransfomer().to(device)
+        print('BadTransformer/theBadTransformerBlock%d.pth not found' % id)
+        theBadTransformer = myBadTransfomerBlock().to(device)
     myFreqs = freqs_cis.clone().to(device)
     myMask = mask.clone().to(device)
     if not os.path.exists('BadTransformer'):
@@ -61,8 +61,8 @@ def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
         myOptimizer.step()
         print('HackTheTransformer %d loss %.6f' % (id, loss.item()))
     
-    torch.save(theBadTransformer, 'BadTransformer/theBadTransformerLayer%d.pth' % id)
-    open('BadTransformer/theBadTransformerLayer%d.loss' % id, 'w').write(str(loss.item()))
+    torch.save(theBadTransformer, 'BadTransformer/theBadTransformerBlock%d.pth' % id)
+    open('BadTransformer/theBadTransformerBlock%d.loss' % id, 'w').write(str(loss.item()))
     print('HackTheTransformer %d done' % id)
 
 def hackMultiTransformer(num = 2, id = 0, epochs = 4096, device = 'cuda:0'):
@@ -73,12 +73,12 @@ def hackMultiTransformer(num = 2, id = 0, epochs = 4096, device = 'cuda:0'):
         Transformers.append(torch.load('theTransformerLayer%d.pth' % (TransID + i), map_location=device))
         print('Load theTransformerLayer%d.pth' % (TransID + i))
     try:
-        theBadTransformer = torch.load('BadTransformer/theBadTransformerLayer%d.pth' % id, map_location=device)
-        print('Loaded BadTransformer/theBadTransformerLayer%d.pth' % id)
+        theBadTransformer = torch.load('BadTransformer/theBadTransformerUnit%d.pth' % id, map_location=device)
+        print('Loaded BadTransformer/theBadTransformerUnit%d.pth' % id)
     except Exception as e:
         print(e)
-        print('No BadTransformer/theBadTransformerLayer%d.pth' % id)
-        theBadTransformer = myBadTransfomer().to(device)
+        print('No BadTransformer/theBadTransformerUnit%d.pth' % id)
+        theBadTransformer = myBadTransformerUnit().to(device)
     myFreqs = freqs_cis.clone().to(device)
     myMask = mask.clone().to(device)
     if not os.path.exists('BadTransformer'):
@@ -96,15 +96,15 @@ def hackMultiTransformer(num = 2, id = 0, epochs = 4096, device = 'cuda:0'):
         loss.backward()
         myOptimizer.step()
         print('HackMultiTransformer %d loss %.6f' % (id, loss.item()))
-    torch.save(theBadTransformer, 'BadTransformer/theBadTransformerLayer%d.pth' % id)
-    open('BadTransformer/theBadTransformerLayer%d.loss' % id, 'w').write(str(loss.item()))
+    torch.save(theBadTransformer, 'BadTransformer/theBadTransformerUnit%d.pth' % id)
+    open('BadTransformer/theBadTransformerUnit%d.loss' % id, 'w').write(str(loss.item()))
     print('HackMultiTransformer %d done' % id)
 
 #hackTheTransformer(0)
 #hackTheTransformer(1, 8192)
 
-#hackMultiTransformer(4, 0, 8192)
-hackMultiTransformer(4, 1, 32768)
+hackMultiTransformer(2, 0, 8192)
+#hackMultiTransformer(2, 1, 32768)
 
 # import threading
 

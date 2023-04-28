@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-class myBadTransfomer(nn.Module):
+class myBadTransfomerBlock(nn.Module):
     def __init__(self):
         super().__init__()
         self.li1 = nn.Linear(4096, 4096, bias=False)
@@ -19,3 +19,16 @@ class myBadTransfomer(nn.Module):
         xO = torch.nn.functional.silu(xO)
         xO = self.out(x + xO)
         return xO
+
+class myBadTransformerUnit(nn.Module):
+    def __init__(self, num_layers=2):
+        super().__init__()
+        self.badtrans = []
+        for _ in range(num_layers):
+            self.badtrans.append(myBadTransfomerBlock())
+        self.badtrans = nn.ModuleList(self.badtrans)
+
+    def forward(self, x):
+        for badtrans in self.badtrans:
+            x = badtrans(x)
+        return x
