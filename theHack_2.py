@@ -103,8 +103,9 @@ def hackMultiTransformer(num = 2, id = 0, epochs = 4096, device = 'cuda:0'):
 #hackTheTransformer(0)
 #hackTheTransformer(1, 8192)
 
-hackMultiTransformer(2, 0, 8192)
+#hackMultiTransformer(2, 0, 32768)
 #hackMultiTransformer(2, 1, 32768)
+hackMultiTransformer(2, 2, 32768)
 
 # import threading
 
