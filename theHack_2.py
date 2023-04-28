@@ -31,20 +31,14 @@ from theHack.BadTransformerLLM import myBadTransfomer
 
 def hackTheTransformer(id = 0, epochs = 4096, device = 'cuda:0'):
     print('hackTheTransformer id ', id)
-    # TransID  = id * 2
-    # theTransformerA = torch.load('theTransformerLayer%d.pth' % TransID, map_location=device)
-    # theTransformerB = torch.load('theTransformerLayer%d.pth' % (TransID + 1), map_location=device)
-    # theTransformerC = torch.load('theTransformerLayer%d.pth' % (TransID + 2), map_location=device)
-    # theTransformerD = torch.load('theTransformerLayer%d.pth' % (TransID + 3), map_location=device)
-
     theTransformer = torch.load('theTransformerLayer%d.pth' % id, map_location=device)
-
-    theBadTransformer = myBadTransfomer().to(device)
     try:
-        theBadTransformer.load_state_dict(torch.load('BadTransformer/theBadTransformerLayer%d.pth' % id, map_location=device))
+        theBadTransformer = torch.load('BadTransformer/theBadTransformerLayer%d.pth' % id, map_location=device)
         print('Loaded BadTransformer/theBadTransformerLayer%d.pth' % id)
-    except:
+    except Exception as e:
+        print(e)
         print('BadTransformer/theBadTransformerLayer%d.pth not found' % id)
+        theBadTransformer = myBadTransfomer().to(device)
     myFreqs = freqs_cis.clone().to(device)
     myMask = mask.clone().to(device)
     if not os.path.exists('BadTransformer'):
@@ -78,12 +72,13 @@ def hackMultiTransformer(num = 2, id = 0, epochs = 4096, device = 'cuda:0'):
     for i in range(num):
         Transformers.append(torch.load('theTransformerLayer%d.pth' % (TransID + i), map_location=device))
         print('Load theTransformerLayer%d.pth' % (TransID + i))
-    theBadTransformer = myBadTransfomer().to(device)
     try:
-        theBadTransformer.load_state_dict(torch.load('BadTransformer/theBadTransformerLayer%d.pth' % id, map_location=device))
-        print('Load BadTransformer/theBadTransformerLayer%d.pth' % id)
-    except:
+        theBadTransformer = torch.load('BadTransformer/theBadTransformerLayer%d.pth' % id, map_location=device)
+        print('Loaded BadTransformer/theBadTransformerLayer%d.pth' % id)
+    except Exception as e:
+        print(e)
         print('No BadTransformer/theBadTransformerLayer%d.pth' % id)
+        theBadTransformer = myBadTransfomer().to(device)
     myFreqs = freqs_cis.clone().to(device)
     myMask = mask.clone().to(device)
     if not os.path.exists('BadTransformer'):
