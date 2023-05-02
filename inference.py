@@ -19,7 +19,7 @@ def load(
     ), f"Loading a checkpoint for MP={len(checkpoints)} but world size is {world_size}"
     ckpt_path = checkpoints[local_rank]
 
-    checkpoint = torch.load(ckpt_path, map_location="cpu")
+    checkpoint = torch.load(ckpt_path, map_location="cuda:0")
 
     with open(Path(ckpt_dir) / "params.json", "r") as f:
         params = json.loads(f.read())
@@ -31,7 +31,6 @@ def load(
     model_args.vocab_size = tokenizer.n_words
     torch.set_default_tensor_type(torch.cuda.HalfTensor)
     model = Transformer(model_args)
-    torch.set_default_tensor_type(torch.FloatTensor)
     model.load_state_dict(checkpoint, strict=False)
     generator = LLaMA(model, tokenizer)
     return generator
@@ -70,9 +69,9 @@ def get_args():
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--ckpt_dir", type=str, default="/llama_data/7B")
+    parser.add_argument("--ckpt_dir", type=str, default="llama/pyllama_data/7B")
     parser.add_argument(
-        "--tokenizer_path", type=str, default="/llama_data/tokenizer.model"
+        "--tokenizer_path", type=str, default="llama/pyllama_data/tokenizer.model"
     )
     return parser.parse_args()
 
